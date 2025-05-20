@@ -3,5 +3,5 @@
 #		- Rozwiązanie 2
 
 Nie można wysyłać za dużych sekwencji:
-		-zabronić użytkownikowi wysyłać za durze pliki
+		-zabronić użytkownikowi wysyłać za duże pliki
 		-dodać buffering time 
