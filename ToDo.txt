@@ -1,7 +1,8 @@
-Biopytchon fork
-pisanie skrpyptu
+Biopython fork
+pisanie skrpyptu:
 	z API do ESM
-	
+
+Poszukać w Biopython formy wyświetlenia obrazu białka.	
 
 
 
