@@ -1,6 +1,7 @@
 Biopython fork
 pisanie skrpyptu:
 	z API do ESM
+api: https://api.esmatlas.com/foldSequence/v1/pdb/
 
 Poszukać w Biopython formy wyświetlenia obrazu białka.	
 
