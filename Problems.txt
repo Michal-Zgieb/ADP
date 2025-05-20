@@ -1,0 +1,7 @@
+# Zdefiniowanie problemu:
+#		- Rozwiązanie 1
+#		- Rozwiązanie 2
+
+Nie można wysyłać za dużych sekwencji:
+		-zabronić użytkownikowi wysyłać za durze pliki
+		-dodać buffering time 
