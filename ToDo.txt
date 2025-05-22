@@ -3,6 +3,10 @@ pisanie skrpyptu:
 	z API do ESM
 api: https://api.esmatlas.com/foldSequence/v1/pdb/
 
+	akceptacja różnych formatów (str, fastq)
+	
+	wizualizowanie wyników za pomocą paczki Pymole lub inny 
+
 Poszukać w Biopython formy wyświetlenia obrazu białka.	
 
 
