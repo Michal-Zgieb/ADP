@@ -21,11 +21,11 @@ def alphafold_submit(sequence):
     continue_btn.click()
 
     print("Kliknięto 'Continue and preview job', czekam 5 sekund...")
-    time.sleep(5)
-
+    
     # Kliknij "Confirm and submit job"
     confirm_btn = driver.find_element(By.XPATH, "//button[.//span[contains(text(),'Confirm and submit job')]]")
     confirm_btn.click()
+    time.sleep(50)
 
     print("Kliknięto 'Confirm and submit job', teraz czekam na wyniki...")
 
