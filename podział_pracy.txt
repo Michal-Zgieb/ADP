@@ -1,7 +1,8 @@
 Katarzyna Dubrowska:
-
+  Łączenie kodów i pobsługa plików 
 Veranika Kananovich:
-
+  Pobieranie Plików
 Kacper Pietrzyk: 
-
+  Logowanie do Chroma
 Michal Zgieb  
+  Wysyłanie zapytań
