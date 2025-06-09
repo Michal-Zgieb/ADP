@@ -1,7 +1,6 @@
 import os
 import subprocess
 import time
-import shutil
 
 def find_chrome_path():
     # Try common install locations
