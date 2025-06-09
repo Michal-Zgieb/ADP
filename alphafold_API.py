@@ -83,11 +83,14 @@ def alphafold_submit(records):
 
         # Wprowadź sekwencję
         textarea.click()
+        print(f"clicked {sequence_name}")
         textarea.send_keys(sequence)
+        print(f'sent {sequence_name}')
+        time.sleep(2)
 
         # 2. Wait until the "Continue and preview job" button is clickable
         continue_btn = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//button[.//span[contains(text(),'Continue and preview job')]]")
+            (By.XPATH, "//button[contains(., 'Continue')]")
         ))
         continue_btn.click()
 
@@ -104,7 +107,6 @@ def alphafold_submit(records):
         ))
         confirm_btn.click()
 
-        name_input.send_keys(sequence_name)
         submitted_jobs.add(sequence_name)
 
 
