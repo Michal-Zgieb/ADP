@@ -4,6 +4,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import os
+import json
 
 driver = None  # globalna zmienna driver
 
@@ -64,11 +66,53 @@ def alphafold_submit(sequence, sequence_name):
     print("Kliknięto 'Confirm and submit job', teraz czekam na wyniki...")
 
 
-def alphafold_download(sequence_name):
-    """
-    pozwala na pobranie plików (możemy to zrobić jako osobną funkcję lub wrzucić do alphafold_submit)
-    """
-    print(f"Czekam na zakończenie przetwarzania sekwencji: {sequence_name}")
+# === Begin Monitoring For Completed Job ===
+    downloaded_json = "downloaded_jobs.json"
+    if os.path.exists(downloaded_json):
+        with open(downloaded_json, "r") as f:
+            downloaded = set(json.load(f))
+    else:
+        downloaded = set()
+
+    def save_downloaded():
+        with open(downloaded_json, "w") as f:
+            json.dump(list(downloaded), f)
+
+    # === Monitor job list ===
+    while True:
+        rows = driver.find_elements(By.XPATH, "//tr[contains(@class, 'mat-mdc-row')]")
+        for row in rows:
+            try:
+                name_cell = row.find_element(By.XPATH, ".//td[contains(@class, 'cdk-column-name')]")
+                job_name = name_cell.text.strip()
+
+                if job_name in downloaded:
+                    continue
+
+                # Check for check_circle
+                status_icon = row.find_element(By.XPATH, ".//mat-icon[contains(text(), 'check_circle')]")
+
+                # Click the menu button in the same row
+                more_btn = row.find_element(By.XPATH, ".//mat-icon[contains(text(), 'more_vert')]/ancestor::button")
+                more_btn.click()
+
+                # Wait and click "Download"
+                download_btn = wait.until(EC.element_to_be_clickable((
+                    By.XPATH, "//a[.//span[text()='Download ']]"
+                )))
+                href = download_btn.get_attribute("href")
+                print(f"⬇️ Downloading: {job_name} from {href}")
+                driver.execute_script("arguments[0].click();", download_btn)
+
+                # Mark as downloaded
+                downloaded.add(job_name)
+                save_downloaded()
+                time.sleep(5)
+            except Exception as e:
+                continue
+
+        print("⏳ Waiting for more jobs to complete...")
+        time.sleep(15)
     
 
 
@@ -78,7 +122,6 @@ def alphafold(sequence, sequence_name):
     """
     alphafold_open()
     alphafold_submit(sequence, sequence_name)
-    alphafold_download(sequence_name)
 
 
 # Przykład użycia
