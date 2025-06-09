@@ -66,27 +66,36 @@ def alphafold_submit(records):
     global driver
 
     # 1. Wait for the sequence textarea to appear and be interactable
-    wait = WebDriverWait(driver, 30)
+    wait = WebDriverWait(driver, 60)
     
+    remaining_jobs_element = wait.until(
+        EC.visibility_of_element_located((By.CSS_SELECTOR, "span[class='remaining-jobs']"))
+    )
+    
+    print(f"remaining available job number: {remaining_jobs_element.text}")
+    if int(remaining_jobs_element.text) < len(records):
+        raise Exception("Not enough jobs available for the number of records. Halting execution.")
+
     submitted_jobs = set()
-    print(records.keys())
 
     for sequence_name, sequence in records.items():
     # Spróbuj znaleźć <textarea>, jeśli nie ma – kliknij "Clear"
+        
         try:
             textarea = driver.find_element(By.CSS_SELECTOR, "textarea.sequence-input")
         except:
-            clear_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[.//span[text()='Clear ']]")))
+            clear_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.clear-button")))
             clear_button.click()
             print("Kliknięto 'Clear', czekam na pojawienie się pola...")
             textarea = wait.until(EC.visibility_of_element_located((By.XPATH, '//textarea[@pattern="/^[ACDEFGHIKLMNPQRSTVWY]*$/i"]')))
 
         # Wprowadź sekwencję
         textarea.click()
-        print(f"clicked {sequence_name}")
+        
         textarea.send_keys(sequence)
-        print(f'sent {sequence_name}')
+        
         time.sleep(2)
+        
 
         # 2. Wait until the "Continue and preview job" button is clickable
         continue_btn = wait.until(EC.element_to_be_clickable(
@@ -148,7 +157,7 @@ def alphafold_submit(records):
                     By.XPATH, "//a[.//span[text()='Download ']]"
                 )))
                 href = download_btn.get_attribute("href")
-                print(f"⬇️ Downloading: {job_name} from {href}")
+                print(f"Downloading: {job_name} from {href}")
                 driver.execute_script("arguments[0].click();", download_btn)
 
                 # Mark as downloaded
@@ -159,7 +168,7 @@ def alphafold_submit(records):
                 continue
         
         if submitted_jobs.issubset(downloaded):
-            print("✅ All jobs downloaded. Exiting loop.")
+            print("All jobs downloaded. Exiting loop.")
             break
     
 def get_protein_sequence_from_fasta(plik, DNA=False):
@@ -189,14 +198,14 @@ def alphafold(file):
 
 if __name__ == "__main__":
     
-    # user_input = input("Enter user data dir path (or press Enter for default): ").strip()
+    user_input = input("Enter user data dir path (or press Enter for default): ").strip()
 
-    # if user_input:
-    #     user_data_dir = os.path.normpath(os.path.join(user_input, "alphafold_session"))
-    # else:
-    #     user_data_dir = "C:/chrome-bot-profile"
+    if user_input:
+        user_data_dir = os.path.normpath(os.path.join(user_input, "alphafold_session"))
+    else:
+        user_data_dir = "C:/chrome-bot-profile"
 
-    # launch_chrome(user_data_dir=user_data_dir)
+    launch_chrome(user_data_dir=user_data_dir)
 
     permit = None
     while permit is None:
@@ -210,7 +219,5 @@ if __name__ == "__main__":
 
     # Normalize slashes (optional but helpful on Windows)
     file = os.path.normpath(file)
-
-
 
     alphafold(file)
