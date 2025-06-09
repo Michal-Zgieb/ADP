@@ -3,25 +3,46 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import re
+import sys
 import time
 import os
 import json
 import subprocess
 from Bio import SeqIO
 
+ALPHAFOLD_SIZE_THRESHOLD = 5000
 ##################################__OPENING_CHROME__##############################
 
 def find_chrome_path():
     # Try common install locations
-    possible_paths = [
-        os.path.expandvars(r"%ProgramFiles%\Google\Chrome\Application\chrome.exe"),
-        os.path.expandvars(r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"),
-        os.path.expandvars(r"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
-    ]
+    possible_paths = []
+
+    if sys.platform.startswith('win'): # Windows
+        possible_paths.extend([
+            os.path.expandvars(r"%ProgramFiles%\Google\Chrome\Application\chrome.exe"),
+            os.path.expandvars(r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"),
+            os.path.expandvars(r"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
+        ])
+    elif sys.platform.startswith('linux'): # Linux
+        possible_paths.extend([
+            "/usr/bin/google-chrome",
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/chromium", 
+            "/usr/bin/chromium-browser",
+            "/opt/google/chrome/google-chrome",
+            os.path.expanduser("~/.local/bin/google-chrome"), # May be in user's local bin directory
+        ])
+    elif sys.platform.startswith('darwin'):  # macOS
+        possible_paths.extend([
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        ])
+    else:
+        raise FileNotFoundError(f"Unsupported operating system: {sys.platform}. Cannot find Chrome.")
+
     for path in possible_paths:
         if os.path.isfile(path):
             return path
-    raise FileNotFoundError("Could not find chrome.exe.")
 
 def launch_chrome(debug_port=9222, user_data_dir="C:/chrome-bot-profile"):
     chrome_path = find_chrome_path()
@@ -34,15 +55,13 @@ def launch_chrome(debug_port=9222, user_data_dir="C:/chrome-bot-profile"):
     time.sleep(3)
 
 
-
 ######################################__ALPHA_FOLD__###################################
 
 driver = None  # globalna zmienna driver
 
 def alphafold_open():
     """
-    tylko otwiera przeglądarkę i daje czas na logowanie
-    :return: None
+    Opens the browser and gives you time to log in to your Google account manually
     """
     global driver
     options = Options()
@@ -56,12 +75,9 @@ def alphafold_open():
     # Now Selenium can control the open Chrome
     driver.get("https://alphafoldserver.com/")
 
-
-
-
 def alphafold_submit(records):
     """
-    Wysyła sekwencję do AlphaFold Server po wcześniejszym zalogowaniu do instancji Chrome.
+    Sends the sequence to the AlphaFold server after logging into the Chrome instance.    
     """
     global driver
 
@@ -72,9 +88,9 @@ def alphafold_submit(records):
         EC.visibility_of_element_located((By.CSS_SELECTOR, "span[class='remaining-jobs']"))
     )
     
-    print(f"remaining available job number: {remaining_jobs_element.text}")
     if int(remaining_jobs_element.text) < len(records):
-        raise Exception("Not enough jobs available for the number of records. Halting execution.")
+        print(f"Not enough remaining jobs({ int(remaining_jobs_element.text)}) for your {len(records)} long request")
+        return None
 
     submitted_jobs = set()
 
@@ -86,7 +102,7 @@ def alphafold_submit(records):
         except:
             clear_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.clear-button")))
             clear_button.click()
-            print("Kliknięto 'Clear', czekam na pojawienie się pola...")
+            print("Click 'Clear', waiting for button...")
             textarea = wait.until(EC.visibility_of_element_located((By.XPATH, '//textarea[@pattern="/^[ACDEFGHIKLMNPQRSTVWY]*$/i"]')))
 
         # Wprowadź sekwencję
@@ -96,7 +112,6 @@ def alphafold_submit(records):
         
         time.sleep(2)
         
-
         # 2. Wait until the "Continue and preview job" button is clickable
         continue_btn = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//button[contains(., 'Continue')]")
@@ -118,8 +133,7 @@ def alphafold_submit(records):
 
         submitted_jobs.add(sequence_name)
 
-
-    print("Kliknięto 'Confirm and submit job', teraz czekam na wyniki...")
+    print("Click 'Confirm and submit job', waiting fot results...")
 
 
 # === Begin Monitoring For Completed Job ===
@@ -171,25 +185,26 @@ def alphafold_submit(records):
             print("All jobs downloaded. Exiting loop.")
             break
     
-def get_protein_sequence_from_fasta(plik, DNA=False):
-    
+def get_protein_sequence_from_fasta(file, DNA=False):
     records = {}
     with open(file, "r") as handle:
         for i in SeqIO.parse(handle, "fasta"):
             uniprot_id = str(i.id)
+            uniprot_id = re.sub(r"[^a-zA-Z0-9 _:-]", "_", uniprot_id)
             if DNA:
                 sequence = str(i.seq.translate(to_stop=True))
             else:
                 sequence = str(i.seq)
-            records[uniprot_id] = sequence
-        
-
+            if len(sequence) > ALPHAFOLD_SIZE_THRESHOLD:
+                print(f"[{uniprot_id}] is skiped: protein is too big for AlphaFold server ({len(sequence)} residues)")
+            else:
+                records[uniprot_id] = sequence
     return records
 
 
-def alphafold(file):
+def run_alphafold_predictions(file):
     """
-    główna funkcja uruchamiająca proces
+    Run the whole prediction proccess.
     """
     alphafold_open()
     records = get_protein_sequence_from_fasta(file)
@@ -207,11 +222,10 @@ if __name__ == "__main__":
 
     launch_chrome(user_data_dir=user_data_dir)
 
-    permit = None
-    while permit is None:
+    while True:
         user_input = input("Input 'y' if you logged into your google account: ").strip()
         if user_input == 'y':
-            permit = 'y'
+            break
 
     
     # Ask user for path and sanitize it
@@ -220,4 +234,4 @@ if __name__ == "__main__":
     # Normalize slashes (optional but helpful on Windows)
     file = os.path.normpath(file)
 
-    alphafold(file)
+    run_alphafold_predictions(file)
