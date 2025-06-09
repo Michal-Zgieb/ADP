@@ -26,9 +26,6 @@ def find_chrome_path():
 def launch_chrome(debug_port=9222, user_data_dir="C:/chrome-bot-profile"):
     chrome_path = find_chrome_path()
 
-    # Kill old debugging Chrome sessions if needed (optional cleanup)
-    subprocess.call(["taskkill", "/f", "/im", "chrome.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
     # Launch Chrome
     cmd = f'"{chrome_path}" --remote-debugging-port={debug_port} --user-data-dir="{user_data_dir}"'
     subprocess.Popen(cmd)
@@ -69,7 +66,7 @@ def alphafold_submit(records):
     global driver
 
     # 1. Wait for the sequence textarea to appear and be interactable
-    wait = WebDriverWait(driver, 20)
+    wait = WebDriverWait(driver, 30)
     
     submitted_jobs = set()
     print(records.keys())
@@ -82,7 +79,7 @@ def alphafold_submit(records):
             clear_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[.//span[text()='Clear ']]")))
             clear_button.click()
             print("Kliknięto 'Clear', czekam na pojawienie się pola...")
-            textarea = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "textarea.sequence-input")))
+            textarea = wait.until(EC.visibility_of_element_located((By.XPATH, '//textarea[@pattern="/^[ACDEFGHIKLMNPQRSTVWY]*$/i"]')))
 
         # Wprowadź sekwencję
         textarea.click()
@@ -190,7 +187,7 @@ def alphafold(file):
 
 if __name__ == "__main__":
     
-    #user_input = input("Enter user data dir path (or press Enter for default): ").strip()
+    # user_input = input("Enter user data dir path (or press Enter for default): ").strip()
 
     # if user_input:
     #     user_data_dir = os.path.normpath(os.path.join(user_input, "alphafold_session"))
