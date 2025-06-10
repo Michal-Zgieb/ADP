@@ -88,6 +88,7 @@ To run the `AlphaFoldER.py` script and use the tool, follow these instructions:
     ```
     Enter input fasta file path: "C:\Users\kacpe\ADP\sample.fasta"
     ```
+    For testing purposes, you can use the "example.fasta" file provided directly within this repository.
 
 5.  **Confirm "Clear" on AF3 Website:**
     Before job submission begins, you must **manually click the "Clear" button** on the AlphaFold3 website. This button is typically located above the job submission field on the right side of the AF3 interface. The script will wait for this confirmation.
