@@ -12,6 +12,7 @@ import subprocess
 from Bio import SeqIO
 
 ALPHAFOLD_SIZE_THRESHOLD = 5000
+ALLOWED_AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
 ##################################__OPENING_CHROME__##############################
 
 def find_chrome_path():
@@ -57,7 +58,7 @@ def launch_chrome(debug_port=9222, user_data_dir="C:/chrome-bot-profile"):
 
 ######################################__ALPHA_FOLD__###################################
 
-driver = None  # globalna zmienna driver
+driver = None  # Global variable driver
 
 def alphafold_open():
     """
@@ -95,7 +96,7 @@ def alphafold_submit(records):
     submitted_jobs = set()
 
     for sequence_name, sequence in records.items():
-    # Spróbuj znaleźć <textarea>, jeśli nie ma – kliknij "Clear"
+    # Try to find <textarea>, if not – click "Clear"
         
         try:
             textarea = driver.find_element(By.CSS_SELECTOR, "textarea.sequence-input")
@@ -105,7 +106,7 @@ def alphafold_submit(records):
             print("Click 'Clear', waiting for button...")
             textarea = wait.until(EC.visibility_of_element_located((By.XPATH, '//textarea[@pattern="/^[ACDEFGHIKLMNPQRSTVWY]*$/i"]')))
 
-        # Wprowadź sekwencję
+        # Seq input
         textarea.click()
         
         textarea.send_keys(sequence)
@@ -159,9 +160,6 @@ def alphafold_submit(records):
                 if job_name in downloaded:
                     continue
 
-                # Check for check_circle
-                status_icon = row.find_element(By.XPATH, ".//mat-icon[contains(text(), 'check_circle')]")
-
                 # Click the menu button in the same row
                 more_btn = row.find_element(By.XPATH, ".//mat-icon[contains(text(), 'more_vert')]/ancestor::button")
                 more_btn.click()
@@ -187,6 +185,7 @@ def alphafold_submit(records):
     
 def get_protein_sequence_from_fasta(file, DNA=False):
     records = {}
+    disallowed_char_pattern = re.compile(f"[^{re.escape(ALLOWED_AMINO_ACIDS)}]", re.IGNORECASE)
     with open(file, "r") as handle:
         for i in SeqIO.parse(handle, "fasta"):
             uniprot_id = str(i.id)
@@ -198,6 +197,7 @@ def get_protein_sequence_from_fasta(file, DNA=False):
             if len(sequence) > ALPHAFOLD_SIZE_THRESHOLD:
                 print(f"[{uniprot_id}] is skiped: protein is too big for AlphaFold server ({len(sequence)} residues)")
             else:
+                sequence = disallowed_char_pattern.sub('A', sequence)
                 records[uniprot_id] = sequence
     return records
 
