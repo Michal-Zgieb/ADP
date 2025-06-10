@@ -1,4 +1,4 @@
-# ADP_2025
+# AlphaFoldER
 AlphaFold3 (AF3) automating tool
 
 The aim of the project is to create a tool allowing for query sending automation to server providing protein prediction service. It allows for parsing a fasta and communicating with AF3 server to obtain and save results on local machine.
