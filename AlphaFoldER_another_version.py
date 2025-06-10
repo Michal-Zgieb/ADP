@@ -11,8 +11,11 @@ from Bio import SeqIO
 import re
 import subprocess
 
+##################################__LOCAL_VARIABLES__##############################
+
 ALPHAFOLD_SIZE_THRESHOLD = 5000
 DEFAULT_WAIT_TIMEOUT = 30
+ALLOWED_AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
 ALPHAFOLD_URL = "https://alphafoldserver.com/"
 
 REMAINING_JOBS_ELEMENT_CSS_SELECTOR = "span.remaining-jobs"
@@ -29,6 +32,8 @@ TEXT_AREA_CSS_SELECTION = "textarea.sequence-input"
 MORE_BUTTON_XPATH = ".//mat-icon[contains(text(), 'more_vert')]/ancestor::button"
 DOWNLOAD_BUTTON_XPATH = "//a[.//span[text()='Download ']]"
 STATUS_CELL_TAG_NAME = "mat-spinner"
+
+##################################__OPENING_CHROME__##############################
 
 def find_chrome_path():
     # Try common install locations
@@ -83,6 +88,8 @@ def login_to_alphafold():
         if user_input == 'y':
             break
 
+######################################__ALPHA_FOLD__###################################
+
 def open_aphafold(driver):
     driver.get(ALPHAFOLD_URL)
 
@@ -97,12 +104,6 @@ def open_aphafold(driver):
     wait.until(
         EC.invisibility_of_element_located((By.CSS_SELECTOR, REMAINING_JOBS_SPINNER_ELEMENT_CSS_SELECTOR))
     )
-
-def run_alphafold_predictions(driver, file):
-    open_aphafold(driver)
-    records = get_protein_sequence_from_fasta(file)
-    submit_records_to_prediction(driver, records)
-    download_records_predictions(driver, records)
 
 def submit_records_to_prediction(driver, records):
     wait = WebDriverWait(driver, DEFAULT_WAIT_TIMEOUT)
@@ -181,7 +182,7 @@ def download_records_predictions(driver, records):
                     By.XPATH, DOWNLOAD_BUTTON_XPATH
                 )))
                 href = download_btn.get_attribute("href")
-                print(f"⬇️ Downloading: {job_name} from {href}")
+                print(f"Downloading: {job_name} from {href}")
                 driver.execute_script("arguments[0].click();", download_btn)
 
                 # Mark as downloaded
@@ -192,7 +193,7 @@ def download_records_predictions(driver, records):
                 open_aphafold(driver)
                 continue
 
-    print("✅ All jobs downloaded. Exiting loop.")
+    print("All jobs downloaded. Exiting loop.")
 
 def save_downloaded(downloaded_json, downloaded):
     with open(downloaded_json, "w") as f:
@@ -214,6 +215,7 @@ def get_already_predicted_record_names(driver):
 
 def get_protein_sequence_from_fasta(file, DNA=False):
     records = {}
+    disallowed_char_pattern = re.compile(f"[^{re.escape(ALLOWED_AMINO_ACIDS)}]", re.IGNORECASE)
     with open(file, "r") as handle:
         for i in SeqIO.parse(handle, "fasta"):
             uniprot_id = str(i.id)
@@ -225,8 +227,15 @@ def get_protein_sequence_from_fasta(file, DNA=False):
             if len(sequence) > ALPHAFOLD_SIZE_THRESHOLD:
                 print(f"[{uniprot_id}] Protein is too big for AlphaFold server ({len(sequence)} residues)")
             else:
+                sequence = disallowed_char_pattern.sub('A', sequence)
                 records[uniprot_id] = sequence
     return records
+
+def run_alphafold_predictions(driver, file):
+    open_aphafold(driver)
+    records = get_protein_sequence_from_fasta(file)
+    submit_records_to_prediction(driver, records)
+    download_records_predictions(driver, records)
 
 if __name__ == "__main__":
     path_to_fasta_file = input("Enter input fasta file path: ").strip().strip('"')
