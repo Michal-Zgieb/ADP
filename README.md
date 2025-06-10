@@ -1,5 +1,5 @@
 # ADP_2025: AlphaFoldER  Automating Tool 
-=======
+
 AlphaFold3 (AF3) automating tool
 
 The AlphaFold3 (AF3) Automating Tool is a Python script designed to automate sending queries to a server providing protein structure prediction services. It allows for parsing FASTA files and communicating with the AF3 server to obtain and save results on your local machine.
