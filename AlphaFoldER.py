@@ -188,7 +188,7 @@ def download_records_predictions(driver, records):
                 # Mark as downloaded
                 already_downloaded.add(job_name)
                 save_downloaded(downloaded_json, already_downloaded)
-                time.sleep(5)
+                time.sleep(2)
             except:
                 open_aphafold(driver)
                 continue
