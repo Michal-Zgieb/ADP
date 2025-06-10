@@ -11,7 +11,7 @@ from Bio import SeqIO
 import re
 import subprocess
 
-##################################__LOCAL_VARIABLES__##############################
+##################################__VARIABLES__##############################
 
 ALPHAFOLD_SIZE_THRESHOLD = 5000
 DEFAULT_WAIT_TIMEOUT = 30
